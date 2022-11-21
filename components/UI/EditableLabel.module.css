@@ -1,0 +1,108 @@
+.label-edit {
+    font-weight: 600;
+    position: absolute;
+    margin-top: 5px;
+}
+
+.label-edit:hover {
+    color: var(--aquablue);
+}
+
+.modal-input-edit {
+    background-color: var(--gray);
+    border: 1.2px solid var(--blue);
+    border-radius: 7px;
+    height: 33px;
+    padding-left: 10px;
+    width: 70%;
+    color: var(--aquablue);
+    font-family: "Open Sans";
+    font-weight: 500;
+    font-size: 16px;
+    margin-left: -10px;
+}
+
+.modal-title {
+    margin: 30px 30px 20px;
+    text-align: center;
+    display: block;
+    font-size: 2em;
+    margin-block-start: 1.7em;
+    margin-block-end: 1.5em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    font-weight: bold;
+}
+
+.modal-title-input-edit {
+    height: 50px;
+    margin: 30px 30px 20px;
+    text-align: center;
+    display: block;
+    font-size: 2em;
+    font-weight: bold;
+    margin: auto;
+    margin-top: 1.7em;
+    margin-bottom: 1.5em;
+    font-family: "Open Sans";
+    color: var(--aquablue);
+    background-color: var(--gray);
+    border: 1.2px solid var(--blue);
+    border-radius: 7px;
+}
+
+.section-title {
+    flex-grow: 15;
+    font-size: 40px;
+    font-weight: 700;
+    margin-left: 10px;
+}
+
+.section-title:hover {
+    color: var(--light-blue);
+}
+
+.modal-input-edit.section-title {
+    color: var(--blue);
+    width: 90%;
+    font-size: 35px;
+    margin-left: 10px;
+}
+
+.label-edit.main-label {
+    font-size: 20px;
+    font-weight: 500;
+    margin-left: 30px;
+}
+
+.label-edit.main-label:hover {
+    color: var(--light-blue);
+}
+
+.modal-input-edit.main-label {
+    color: var(--blue);
+    width: 90%;
+    font-size: 18px;
+    margin-left: 10px;
+}
+
+.label-edit.feature-detail-specific {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--aquablue);
+    margin-left: 30px;
+}
+
+.label-edit.feature-detail-specific:hover {
+    color: var(--light-blue);
+}
+
+.modal-input-edit.feature-detail-specific {
+    color: var(--light-blue);
+    width: 90%;
+    font-size: 16px;
+    margin-left: 15px;
+    margin-top: 8px;
+}
+
+

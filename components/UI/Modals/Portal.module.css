@@ -1,0 +1,144 @@
+.modal-backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    z-index: 10;
+}
+
+.modal-box {
+    background: white;
+    position: absolute;
+    width: 50%;
+    height: 350px;
+    top: 150px;
+    left: 25%;
+    z-index: 100;
+    border-radius: 10px;
+    min-width: 500px;
+}
+
+.div-modal {
+    display: grid;
+    justify-content: space-evenly;
+}
+
+.modal-title {
+    margin: 30px 30px 20px;
+    text-align: center;
+}
+
+.div-btn-modal {
+    margin: 15px auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+input.modal-input {
+    border: 1px solid var(--blue);
+    border-radius: 10px;
+    width: 90%;
+    height: 50px;
+    margin: auto;
+    padding: 10px;
+    font-family: "Open Sans";
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--blue);
+}
+
+.modal-box.edit {
+    height: revert;
+    top: 125px;
+}
+
+.div-modal.edit {
+    justify-content: center;
+    padding: 10px;
+}
+
+.div-modal-edit {
+    display: flex;
+    flex-direction: column;
+    width: 350px;
+    margin: auto;
+}
+
+.div-edit-row {
+    margin: 5px 0px;
+}
+
+.div-btns {
+    width: 75px;
+}
+
+.div-btn-delete {
+    float: right;
+    width: 33px;
+    height: 33px;
+    padding-top: 2px;
+    border: 1px solid var(--red);
+    border-radius: 5px;
+    text-align: center;
+}
+
+.btn-delete {
+    background-color: white;
+    color: var(--red);
+    font-size: 20px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.div-btn-delete:hover {
+    background-color: var(--red);
+}
+
+.div-btn-delete:hover > .btn-delete {
+    background-color: var(--red);
+    color: white;
+    border: none;
+}
+
+.modal-backdrop-delete {
+    background: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    z-index: 100;
+}
+
+.modal-box.delete {
+    width: 45%;
+    left: 27%;
+    font-size: 12px;
+    height: 300px;
+}
+
+.div-modal-edit-stories {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 10px 30px;
+    justify-content: center;
+}
+
+.div-edit-tag {
+    background-color: var(--gray-tag);
+    color: white;
+    padding: 8px 15px;
+    margin: 10px 8px;
+    border-radius: 24px;
+}
+
+.div-edit-tag.found {
+    background-color: var(--blue);
+}
+
+.div-edit-tag:hover {
+    opacity: 75%;
+}

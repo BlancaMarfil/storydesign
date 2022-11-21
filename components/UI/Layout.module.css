@@ -1,0 +1,31 @@
+nav.topnav {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: var(--blue);
+    font-size: 20px;
+    font-weight: 700;
+}
+
+nav.topnav a {
+    display: inline-block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+nav.topnav .line {
+    position: absolute;
+    width: 80px;
+    height: 3px;
+    border-radius: 3px;
+    background: #fddb3a;
+    top: 42px;
+    left: 10px;
+}
+
+nav.topnav a:hover {
+    background-color: #0c3259;
+}

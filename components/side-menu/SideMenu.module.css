@@ -1,0 +1,30 @@
+.sidenav {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    background-color: var(--dark-gray);
+    height: 100%;
+    float: left;
+    padding: 20px 0px;
+    /*flex-grow: 1;*/
+}
+
+nav.sidenav a {
+    display: block;
+    padding: 14px 30px;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 700;
+    z-index: 1;
+}
+
+nav.sidenav a:hover {
+    color: white;
+    background-color: rgba(20, 63, 107, 0.5);
+}
+
+nav.sidenav a.active {
+    color: white;
+    background-color: rgba(20, 63, 107, 0.7);
+}
+
