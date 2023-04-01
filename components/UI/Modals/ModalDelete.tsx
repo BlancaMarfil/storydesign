@@ -1,4 +1,4 @@
-import { Fragment, useRef } from "react";
+import { Fragment } from "react";
 import MainButton from "../MainButton";
 import styles from "./Portal.module.css";
 import { propsTypes } from "./Portal";

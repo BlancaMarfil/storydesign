@@ -1,16 +1,14 @@
 import { createSelector, createSlice } from "@reduxjs/toolkit";
 import { RootState, Selector } from ".";
-import {
-    storyObjectsSelector,
-    storySelectedObjectTimelineSelector,
-} from "./stories-slice";
+import { firebaseUrl } from "../components/hooks/httpFunctions";
+import { storySelectedObjectTimelineSelector } from "./stories-slice";
 
-interface detailFormat {
+export interface detailFormat {
     order: number;
     value: string;
 }
 
-interface timelineFormat {
+export interface timelineFormat {
     event: string;
     order: number;
     details: Record<string, detailFormat>;
@@ -27,141 +25,52 @@ export interface compressedTypeTimeline {
     }[];
 }
 
-const timeline: Record<string, timelineFormat> = {
-    t1: {
-        event: "Arriving at Vienna Train Station",
-        order: 0,
-        details: {
-            d1: {
-                order: 0,
-                value: "The train was on time but her father was not there.",
-            },
-            d2: {
-                order: 1,
-                value: "They take a carraige and they get robbed.",
-            },
-        },
-    },
-    t2: {
-        event: "Arriving at SommerSet Train Station",
-        order: 1,
-        details: {
-            d3: {
-                order: 0,
-                value: "The train was on time but her mother was not there.",
-            },
-            d4: {
-                order: 1,
-                value: "They take a carraige and they start dancing",
-            },
-        },
-    },
-    t3: {
-        event: "Leaving Tokyo Train Station",
-        order: 2,
-        details: {
-            d5: {
-                order: 0,
-                value: "The train was NOT on time.",
-            },
-        },
-    },
-    t4: {
-        event: "Getting Sandwiches",
-        order: 3,
-        details: {
-            d6: {
-                order: 0,
-                value: "She doesn't like tomato",
-            },
-            d7: {
-                order: 1,
-                value: "He offers his cheese",
-            },
-            d8: {
-                order: 3,
-                value: "She refuses and leaves",
-            },
-        },
-    },
-};
-
 const initialTimelineState = {
-    timelineObjects: timeline,
+    timelineObjects: {} as Record<string, timelineFormat>,
 };
 
 const timelineSlice = createSlice({
     name: "timelineSlice",
     initialState: initialTimelineState,
     reducers: {
+        loadTimeline(state, action) {
+            state.timelineObjects = action.payload;
+        },
         addDetail(state, action) {
-            // action.payload = [timelineEventId, detailOrder, detailValue]
-            const event = state.timelineObjects[action.payload[0]];
-
-            // Modify order of following details
-            Object.keys(event.details).map((detailId) => {
-                const detail = event.details[detailId];
-                detail.order =
-                    detail.order >= action.payload[1]
-                        ? detail.order + 1
-                        : detail.order;
-            });
-
-            const newDetailId = Math.random().toString();
-            event.details[newDetailId] = {
-                order: action.payload[1],
-                value: action.payload[2],
+            state.timelineObjects[action.payload[0]].details[
+                action.payload[1]
+            ] = {
+                order: action.payload[2],
+                value: action.payload[3],
             };
         },
         addEvent(state, action) {
-            // action.payload = [eventOrder, eventValue]
-
-            // Modify order of following attributes
-            Object.keys(state.timelineObjects).map((eventId) => {
-                const event = state.timelineObjects[eventId];
-                event.order =
-                    event.order >= action.payload[0]
-                        ? event.order + 1
-                        : event.order;
-            });
-
-            const newEventId = Math.random().toString();
-            const newDetails: Record<string, detailFormat> = {
-                newEventId: { order: 0, value: "New Detail" },
+            const newDetails: Record<string, detailFormat> = {};
+            newDetails[action.payload[1]] = {
+                order: 0,
+                value: "Write what happened in this event...",
             };
 
-            state.timelineObjects[newEventId] = {
-                event: action.payload[1],
-                order: action.payload[0],
+            state.timelineObjects[action.payload[0]] = {
+                order: action.payload[2],
+                event: action.payload[3],
                 details: newDetails,
             };
         },
         modifyDetail(state, action) {
-            // action.payload = [timelineEventId, detailId, newValue]
-            const event = state.timelineObjects[action.payload[0]];
-            event.details[action.payload[1]].value = action.payload[2];
+            state.timelineObjects[action.payload[0]].details[
+                action.payload[1]
+            ].value = action.payload[2];
         },
         modifyEvent(state, action) {
-            // action.payload = [timelineEventId, newValue]
             state.timelineObjects[action.payload[0]].event = action.payload[1];
         },
         deleteDetail(state, action) {
-            // action.payload = [timelineEventId, detailId]
-            const event = state.timelineObjects[action.payload[0]];
-            const deleteDetailOrder = event.details[action.payload[1]].order;
-            delete event.details[action.payload[1]];
-
-            // Rearrange orders
-            Object.keys(event.details).map((detailId) => {
-                const detail = event.details[detailId];
-                detail.order =
-                    detail.order > deleteDetailOrder
-                        ? detail.order - 1
-                        : detail.order;
-            });
+            delete state.timelineObjects[action.payload[0]].details[
+                action.payload[1]
+            ];
         },
         deleteEvent(state, action) {
-            // action.payload = attributeId
             delete state.timelineObjects[action.payload];
         },
     },
@@ -211,10 +120,209 @@ export const timelineStorySelector: Selector<compressedTypeTimeline[]> =
         storySelectedObjectTimelineSelector,
         (timeline, story) => {
             if (story) {
-                return timeline.filter((t) => story.obj.items.includes(t.id));
+                return timeline.filter((t) =>
+                    Array.from(story.obj.items).includes(t.id)
+                );
             }
         }
     );
+
+const mappingTimelineObj = (data: any) => {
+    const mappedData = {} as Record<string, timelineFormat>;
+    Object.keys(data).map((id) => {
+        const mappedDetails = {} as Record<string, detailFormat>;
+        const details: Record<string, detailFormat> = data[id].details;
+        if (details !== undefined) {
+            Object.keys(details).map((detailId) => {
+                mappedDetails[detailId] = {
+                    order: details[detailId].order,
+                    value: details[detailId].value,
+                };
+            });
+            mappedData[id] = {
+                event: data[id].event,
+                order: data[id].order,
+                details: mappedDetails,
+            };
+        } else {
+            mappedData[id] = {
+                event: data[id].event,
+                order: data[id].order,
+                details: {},
+            };
+        }
+    });
+    return mappedData;
+};
+
+// THUNKS
+export const loadTimeline = () => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(`${firebaseUrl}/timeline.json`, {
+                method: "GET",
+                headers: {},
+                body: null,
+            });
+
+            const data: any = await response.json();
+            dispatch(timelineActions.loadTimeline(mappingTimelineObj(data)));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const addNewDetail = (
+    timelineId: string,
+    order: Number,
+    value: string
+) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/timeline/${timelineId}/details.json`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({ order: order, value: value }),
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(
+                timelineActions.addDetail([timelineId, data.name, order, value])
+            );
+
+            return data;
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const addNewEvent = (order: Number, eventValue: string) => {
+    const newDetailId = Math.floor(100000 + Math.random() * 900000).toString();
+    const details = {};
+    details[newDetailId] = {
+        order: 0,
+        value: "Write what happened in this event...",
+    };
+    return async (dispatch) => {
+        try {
+            const response = await fetch(`${firebaseUrl}/timeline.json`, {
+                method: "POST",
+                body: JSON.stringify({
+                    order: order,
+                    event: eventValue,
+                    details: details,
+                }),
+                headers: {},
+            });
+
+            const data: any = await response.json();
+
+            dispatch(
+                timelineActions.addEvent([
+                    data.name,
+                    newDetailId,
+                    order,
+                    eventValue,
+                ])
+            );
+
+            return data;
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const editEvent = (timelineId: string, newValue: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/timeline/${timelineId}/event.json`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify(newValue),
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(timelineActions.modifyEvent([timelineId, newValue]));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const deleteEvent = (timelineId: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/timeline/${timelineId}.json`,
+                {
+                    method: "DELETE",
+                    body: null,
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(timelineActions.deleteEvent(timelineId));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const editDetail = (
+    timelineId: string,
+    detailId: string,
+    newValue: string
+) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/timeline/${timelineId}/details/${detailId}/value.json`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify(newValue),
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(
+                timelineActions.modifyDetail([timelineId, detailId, newValue])
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const deleteDetail = (timelineId: string, detailId: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/timeline/${timelineId}/details/${detailId}.json`,
+                {
+                    method: "DELETE",
+                    body: null,
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(timelineActions.deleteDetail([timelineId, detailId]));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
 
 export default timelineSlice.reducer;
 export const timelineActions = timelineSlice.actions;

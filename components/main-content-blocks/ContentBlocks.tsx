@@ -3,13 +3,12 @@ import { Fragment, useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import { MdOutlineExpandLess, MdOutlineExpandMore } from "react-icons/md";
 import { compressedType } from "../../store";
-import { compressedTypeCharacter } from "../../store/characters-slice";
 import styles from "./ContentBlocks.module.css";
 
 interface propsTypes {
     sectionTitle: string;
     blockItems: compressedType[];
-    onClickNewHandler: () => void;
+    onClickNewHandler: any;
     onClickItemRef: string;
     showNew?: boolean;
 }

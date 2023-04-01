@@ -1,4 +1,5 @@
 import { createSelector, createSlice } from "@reduxjs/toolkit";
+import { firebaseUrl } from "../components/hooks/httpFunctions";
 import {
     compressedType,
     findDependentItems,
@@ -8,36 +9,14 @@ import {
 } from "../store";
 import { characterObjectsSelector } from "./characters-slice";
 
-const stories = {
-    story_1: {
-        name: "The Oak Professor",
-        characters: ["char_1"],
-        timeline: ["t1", "t2"],
-    },
-    story_2: {
-        name: "A Time For A Change",
-        characters: ["char_1", "char_2"],
-        timeline: ["t3"],
-    },
-    story_3: {
-        name: "The Rock",
-        characters: ["char_3"],
-        timeline: ["t2", "t3"],
-    },
-    story_4: {
-        name: "No Questions Asked",
-        characters: ["char_1", "char_2", "char_3"],
-        timeline: ["t1", "t3"],
-    },
-    story_5: {
-        name: "Backwards",
-        characters: ["char_2", "char_3"],
-        timeline: ["t2"],
-    },
-};
+export interface storyFormat {
+    name: string;
+    characters: string[];
+    timeline: string[];
+}
 
 const initialStoriesState = {
-    storyObjects: stories,
+    storyObjects: {} as Record<string, storyFormat>,
     selectedStoryName: "All",
 };
 
@@ -45,47 +24,35 @@ const storiesSlice = createSlice({
     name: "storiesSlice",
     initialState: initialStoriesState,
     reducers: {
+        loadStories(state, action) {
+            state.storyObjects = action.payload;
+        },
         setSelectedStoryName(state, action) {
             state.selectedStoryName = action.payload;
         },
         addStory(state, action) {
-            const lastStoryId = Object.keys(state.storyObjects)
-                .sort()
-                .at(-1)
-                .split("_")[1];
-            const newId = "story".concat(
-                "_",
-                (parseInt(lastStoryId) + 1).toString()
-            );
-            state.storyObjects[newId] = {
-                name: action.payload,
+            state.storyObjects[action.payload[0]] = {
+                name: action.payload[1],
                 characters: [],
                 timeline: [],
             };
         },
         addCharacterToStory(state, action) {
-            const arrayObj = getCompressedType(
-                state.storyObjects,
-                "storiesCharacters"
+            state.storyObjects[action.payload[1]].characters.push(
+                action.payload[0]
             );
-            const storyFound = arrayObj.find(
-                (story) => story.obj.name === action.payload[1]
-            );
-            storyFound.obj.items.push(action.payload[0]);
         },
         changeStoryName(state, action) {
             state.storyObjects[action.payload[0]].name = action.payload[1];
         },
         addTimeline(state, action) {
-            // action.payload = timelineEventId
-            console.log("story slice")
-            const storyId = Object.keys(state.storyObjects).find(
-                (storyId) => 
-                    state.storyObjects[storyId].name === state.selectedStoryName
+            state.storyObjects[action.payload[0]].timeline.push(
+                action.payload[1]
             );
-            state.storyObjects[storyId].timeline.push(
-                action.payload
-            );
+        },
+        deleteTimeline(state, action) {
+            const arrTimeline = state.storyObjects[action.payload[0]].timeline;
+            arrTimeline.splice(arrTimeline.indexOf(action.payload[1]), 1);
         },
     },
 });
@@ -143,10 +110,163 @@ export const storySelectedObjectTimelineSelector: Selector<compressedType> =
         (storyName, storyObjects) => {
             // if (storyName === "All") {
             //     return null
-            // } 
+            // }
             return storyObjects.find((story) => story.obj.name == storyName);
         }
     );
+
+const mappingStoryObj = (data: any) => {
+    const mappedData = {} as Record<string, storyFormat>;
+    Object.keys(data).map((id) => {
+        const characters: string[] = Object.values(data[id].characters || {});
+        const timelines: string[] = Object.values(data[id].timeline || {});
+        mappedData[id] = {
+            name: data[id].name,
+            characters: characters,
+            timeline: timelines,
+        };
+    });
+    return mappedData;
+};
+
+// THUNKS
+export const loadStories = () => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(`${firebaseUrl}/stories.json`, {
+                method: "GET",
+                headers: {},
+                body: null,
+            });
+
+            const data: any = await response.json();
+            dispatch(storiesActions.loadStories(mappingStoryObj(data)));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const addNewStory = (storyName: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(`${firebaseUrl}/stories.json`, {
+                method: "POST",
+                body: JSON.stringify({ name: storyName }),
+                headers: {},
+            });
+
+            const data: any = await response.json();
+            dispatch(storiesActions.addStory([data.name, storyName]));
+            return data.name;
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const addCharacterToStory = (storyId: string, charId: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/stories/${storyId}/characters.json`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(charId),
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(storiesActions.addCharacterToStory([charId, storyId]));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const addTimelineToStory = (storyId: string, timelineId: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/stories/${storyId}/timeline.json`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(timelineId),
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(storiesActions.addTimeline([storyId, timelineId]));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const editStoryName = (storyId: string, newName: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/stories/${storyId}/name.json`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify(newName),
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(storiesActions.changeStoryName([storyId, newName]));
+            dispatch(storiesActions.setSelectedStoryName(newName));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const deleteTimelineFromStory = (
+    storyId: string,
+    timelineId: string
+) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/stories/${storyId}/timeline/${timelineId}.json`,
+                {
+                    method: "DELETE",
+                    body: null,
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(storiesActions.deleteTimeline([storyId, timelineId]));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const getTimelinesFromStory = (storyId: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/stories/${storyId}/timeline.json`,
+                {
+                    method: "GET",
+                    body: null,
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
 
 export default storiesSlice.reducer;
 export const storiesActions = storiesSlice.actions;

@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { IoIosAddCircleOutline } from "react-icons/io";
 import EditableLabel from "./EditableLabel";
 import styles from "../CharacterContent.module.css";

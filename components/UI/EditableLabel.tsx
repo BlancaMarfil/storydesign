@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { compressedType } from "../../store";
 import styles from "./EditableLabel.module.css";
 
 interface labelPropsTypes {

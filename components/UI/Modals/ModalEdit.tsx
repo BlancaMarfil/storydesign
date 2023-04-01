@@ -3,10 +3,10 @@ import MainButton from "../MainButton";
 import styles from "./Portal.module.css";
 import { RiDeleteBin3Line } from "react-icons/ri";
 import Portal, { propsTypes } from "./Portal";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import {
-    categoriesActions,
-    categoriesSortedSelector,
+    deleteCategory,
+    editCategory,
 } from "../../../store/categories-slice";
 import { AppDispatch, compressedType } from "../../../store";
 import EditableLabel from "../EditableLabel";
@@ -29,15 +29,19 @@ const ModalEdit = (props: propsTypes) => {
         setShowDeleteModal(true);
     };
 
-    const buttonOKDeletePressedHandler = () => {
-        dispatch(categoriesActions.deleteCategory(itemToDelete.id));
+    // Deleteing
+
+    const buttonOKDeletePressedHandler = async () => {
+        await dispatch(deleteCategory(itemToDelete.id));
         setShowDeleteModal(false);
         router.push("/categories/All");
     };
 
-    const newCategoryNameHandler = (newName: string, id: string) => {
-        dispatch(categoriesActions.changeCategoryName([id, newName]));
-        router.push(`/categories/${encodeURIComponent(newName)}`)
+    // Modfying
+
+    const newCategoryNameHandler = async (newName: string, id: string) => {
+        await dispatch(editCategory(id, newName));
+        router.push(`/categories/${encodeURIComponent(newName)}`);
     };
 
     return (
@@ -69,6 +73,9 @@ const ModalEdit = (props: propsTypes) => {
                                     }
                                     classNameLabel="label-edit"
                                     classNameInput="modal-input-edit"
+                                    onBlurInput={(value) =>
+                                        newCategoryNameHandler(value, item.id)
+                                    }
                                 />
                                 <div
                                     className={styles["div-btn-delete"]}

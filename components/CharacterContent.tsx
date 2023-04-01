@@ -3,17 +3,20 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import MainButton from "./UI/MainButton";
 import styles from "./CharacterContent.module.css";
 import EditableLabel from "./UI/EditableLabel";
-import { IoIosAddCircleOutline } from "react-icons/io";
-import { AiOutlineMinusCircle } from "react-icons/ai";
 import { useDispatch, useSelector } from "react-redux";
 import {
-    characterActions,
+    addNewAttribute,
+    addNewDescription,
     charactersSortedSelector,
+    deleteDescription,
+    deleteFeature,
+    editCharacterName,
+    editDescription,
+    editFeature,
     selectedCharacterNameSelector,
 } from "../store/characters-slice";
 import { AppDispatch } from "../store";
 import IconEditableLabel from "./UI/IconEditableLabel";
-import { MdNoEncryption } from "react-icons/md";
 import { selectedStoryNameSelector } from "../store/stories-slice";
 
 const CharacterContent = () => {
@@ -32,7 +35,8 @@ const CharacterContent = () => {
     // Selectors
     const storySelectedName = useSelector(selectedStoryNameSelector);
     const characterSelectedName = useSelector(selectedCharacterNameSelector);
-    const characterFound = useSelector(charactersSortedSelector).find(
+    const allCharacters = useSelector(charactersSortedSelector)
+    const characterFound = allCharacters.find(
         (char) => char.name == characterSelectedName
     );
 
@@ -40,11 +44,14 @@ const CharacterContent = () => {
     const dispatch = useDispatch<AppDispatch>();
 
     // Functions
-    const changeCharacterNameHandler = (newName: string) => {
-        dispatch(characterActions.changeCharacterName(newName));
-        dispatch(characterActions.setSelectedCharacterName(newName));
-        console.log(characterFound);
+
+    // ---------- Change Character Name
+
+    const changeCharacterNameHandler = async (newName: string) => {
+        await dispatch(editCharacterName(characterFound.id, newName));
     };
+
+    // ---------- Inputs
 
     const onClickAddInputHandler = (id: string) => {
         setInputVisible(true);
@@ -58,55 +65,81 @@ const CharacterContent = () => {
         }
     };
 
-    const addNewDetailHandler = (
-        attributeId: string,
+    // ---------- Add New Detail
+
+    const addNewDetailHandler = async (
+        attrId: string,
         previousOrder: number,
         value: string
     ) => {
-        dispatch(
-            characterActions.addDescriptionToCharacter([
-                attributeId,
+        await dispatch(
+            addNewDescription(
+                characterFound.id,
+                attrId,
                 previousOrder + 1,
-                value,
-            ])
+                value
+            )
         );
-
-        setInfoAdded({ attId: attributeId, previousOrder: previousOrder });
+        setInfoAdded({ attId: attrId, previousOrder: previousOrder });
     };
 
-    const addNewFeaturehandler = (previousOrder: number, value: string) => {
-        dispatch(
-            characterActions.addFeatureToCharacter([previousOrder + 1, value])
+    // ---------- Add New Feature
+
+    const addNewFeaturehandler = async (
+        previousOrder: number,
+        value: string
+    ) => {
+        await dispatch(
+            addNewAttribute(characterFound.id, previousOrder + 1, value)
         );
         setIsLabel(false);
         setInputVisible(false);
     };
 
-    const modifyDetailHandler = (
+    // ---------- Modifying Detail
+
+    const modifyDetailHandler = async (
         attributeId: string,
         descriptionId: string,
         newValue: string
     ) => {
         if (newValue !== "") {
-            dispatch(
-                characterActions.modifyDetail([
+            await dispatch(
+                editDescription(
+                    characterFound.id,
                     attributeId,
                     descriptionId,
-                    newValue,
-                ])
+                    newValue
+                )
             );
         } else {
-            dispatch(
-                characterActions.deleteDetail([attributeId, descriptionId])
+            await dispatch(
+                deleteDescription(characterFound.id, attributeId, descriptionId)
             );
         }
     };
 
-    const modifyFeatureHandler = (attributeId: string, newValue: string) => {
+    // ---------- Modifying Feature
+
+    const modifyFeatureHandler = async (
+        attributeId: string,
+        newValue: string,
+        attrOrder: Number
+    ) => {
         if (newValue !== "") {
-            dispatch(characterActions.modifyFeature([attributeId, newValue]));
+            await dispatch(
+                editFeature(characterFound.id, attributeId, newValue)
+            );
+        } else if (attrOrder == 0) {
+            await dispatch(
+                editFeature(
+                    characterFound.id,
+                    attributeId,
+                    "Write a main feature for your character here..."
+                )
+            );
         } else {
-            dispatch(characterActions.deleteFeature(attributeId));
+            await dispatch(deleteFeature(characterFound.id, attributeId));
         }
     };
 
@@ -176,7 +209,11 @@ const CharacterContent = () => {
                                     onClickAddInputHandler(attribute.id)
                                 }
                                 onClickLabel={(value) =>
-                                    modifyFeatureHandler(attribute.id, value)
+                                    modifyFeatureHandler(
+                                        attribute.id,
+                                        value,
+                                        attribute.order
+                                    )
                                 }
                                 classNameLabel="label-edit main-label"
                                 classNameInput="modal-input-edit main-label"
@@ -204,31 +241,34 @@ const CharacterContent = () => {
                                             onBlurHandler(value)
                                         }
                                     />
-                                    {labelIdClicked == desc.id && inputVisible && (
-                                        <div
-                                            className={styles["functions-div"]}
-                                        >
-                                            <EditableLabel
-                                                isLabel={false}
-                                                initValue=""
-                                                onClickLabel={(value) =>
-                                                    addNewDetailHandler(
-                                                        attribute.id,
-                                                        desc.order,
-                                                        value
-                                                    )
+                                    {labelIdClicked == desc.id &&
+                                        inputVisible && (
+                                            <div
+                                                className={
+                                                    styles["functions-div"]
                                                 }
-                                                classNameLabel="label-edit feature-detail-specific"
-                                                classNameInput="modal-input-edit feature-detail-specific"
-                                                onBlurInput={(value) =>
-                                                    onBlurHandler(value)
-                                                }
-                                            />
-                                        </div>
-                                    )}
+                                            >
+                                                <EditableLabel
+                                                    isLabel={false}
+                                                    initValue=""
+                                                    onClickLabel={(value) =>
+                                                        addNewDetailHandler(
+                                                            attribute.id,
+                                                            desc.order,
+                                                            value
+                                                        )
+                                                    }
+                                                    classNameLabel="label-edit feature-detail-specific"
+                                                    classNameInput="modal-input-edit feature-detail-specific"
+                                                    onBlurInput={(value) =>
+                                                        onBlurHandler(value)
+                                                    }
+                                                />
+                                            </div>
+                                        )}
                                 </Fragment>
                             ))}
-                            {labelIdClicked == attribute.id && inputVisible && (
+                            {labelIdClicked === attribute.id && inputVisible && (
                                 <div className={styles["functions-div"]}>
                                     <EditableLabel
                                         isLabel={false}

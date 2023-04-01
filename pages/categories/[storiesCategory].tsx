@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { Fragment, useEffect } from "react";
+import { Fragment } from "react";
 import MainContentBlocksCategories from "../../components/main-content-blocks/MainContentBlocksCategories";
 import SideMenuCategories from "../../components/side-menu/SideMenuCategories";
 

@@ -4,12 +4,15 @@ import styles from "./Portal.module.css";
 import { propsTypes } from "./Portal";
 import { useDispatch, useSelector } from "react-redux";
 import {
-    categoriesActions,
+    addStoryToCategory,
     categoriesSortedSelector,
+    deleteStoryFromCategory,
 } from "../../../store/categories-slice";
 import { AppDispatch, compressedType } from "../../../store";
 import EditableLabel from "../EditableLabel";
-import { storiesActions } from "../../../store/stories-slice";
+import {
+    editStoryName,
+} from "../../../store/stories-slice";
 
 const ModalEditStories = (props: propsTypes) => {
     // Selectors
@@ -19,30 +22,19 @@ const ModalEditStories = (props: propsTypes) => {
     const dispatch = useDispatch<AppDispatch>();
 
     //Functions
-    const newStoryNameHandler = (newName: string) => {
-        dispatch(
-            storiesActions.changeStoryName([props.content[0], newName])
-        );
-        dispatch(storiesActions.setSelectedStoryName(newName));
+    const newStoryNameHandler = async (newName: string) => {
+        await dispatch(editStoryName(props.content[0], newName));
     };
 
-    const onCategoryClickedHandler = (categoryId: string) => {
+    const onCategoryClickedHandler = async (categoryId: string) => {
         if (props.content[1].includes(categoryId)) {
             // Category deselected
-            dispatch(
-                categoriesActions.deleteStoryFromCategory([
-                    props.content[0],
-                    categoryId,
-                ])
+            await dispatch(
+                deleteStoryFromCategory(categoryId, props.content[0])
             );
         } else {
             // Category Selected
-            dispatch(
-                categoriesActions.addStoryToCategory([
-                    props.content[0],
-                    categoryId,
-                ])
-            );
+            await dispatch(addStoryToCategory(categoryId, props.content[0]));
         }
     };
 

@@ -1,19 +1,21 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import Portal from "../UI/Modals/Portal";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, compressedType } from "../../store";
+import { AppDispatch } from "../../store";
 import {
-    categoriesActions,
+    addStoryToCategory,
     categoriesSortedSelector,
 } from "../../store/categories-slice";
 import {
-    storiesActions,
+    addNewStory,
+    addTimelineToStory,
     storiesCharactersSortedSelector,
 } from "../../store/stories-slice";
 import ContentBlocks from "./ContentBlocks";
 import MainButton from "../UI/MainButton";
 import { useRouter } from "next/router";
 import styles from "./ContentBlocks.module.css";
+import { addNewEvent } from "../../store/timeline-slice";
 
 const MainContentBlocksCategories = (props: {
     categorySelectedName: string;
@@ -27,48 +29,36 @@ const MainContentBlocksCategories = (props: {
 
     // State variables
     const [showEditModal, setShowEditModal] = useState(false);
-    const [newStoryName, setNewStoryName] = useState("");
+    const [newStoryCategoryId, setNewStoryCategoryId] = useState("");
     const [showModalNewStory, setShowModalNewStory] = useState(false);
 
     //Selectors
     const allCategories = useSelector(categoriesSortedSelector);
     const allStories = useSelector(storiesCharactersSortedSelector);
-    const storiesinCategoryObject = allCategories.map((category) => {
+    const storiesInCategoreyObject = allCategories.map((category) => {
         const stories = allStories.filter((story) =>
             category.obj.items.includes(story.id)
         );
         return { categoryName: category.obj.name, stories: stories };
     });
-    const categoryObject = allCategories.find(
-        (category) => category.obj.name === categorySelectedName
-    );
 
     // Dispatch
     const dispatch = useDispatch<AppDispatch>();
 
-    // Handlers
-    const addNewStoryHandler = (storyName: string) => {
-        setNewStoryName(storyName);
-        dispatch(storiesActions.addStory(storyName));
+    // Functions
+
+    const addNewStoryHandler = async (storyName: string) => {
+        const storyId = await dispatch(addNewStory(storyName));
+        await dispatch(addStoryToCategory(newStoryCategoryId, storyId));
+        const eventData = await dispatch(addNewEvent(0, "Write the first thing that happened..."));
+        await dispatch(addTimelineToStory(storyId, eventData.name));
+        setShowModalNewStory(false);
     };
 
-    // UseEffect
-    useEffect(() => {
-        if (componentDidMount.current) {
-            const newStoryId = allStories.find(
-                (story) => story.obj.name === newStoryName
-            ).id;
-            dispatch(
-                categoriesActions.addStoryToCategory([
-                    newStoryId,
-                    categoryObject.id,
-                ])
-            );
-
-            setShowModalNewStory(false);
-        }
-        componentDidMount.current = true;
-    }, [newStoryName]);
+    const onClickNewBlockHandler = (categoryId: string) => {
+        setNewStoryCategoryId(categoryId);
+        setShowModalNewStory(true);
+    };
 
     // Content
     const categoriesToShow =
@@ -100,11 +90,13 @@ const MainContentBlocksCategories = (props: {
                         key={category.id}
                         sectionTitle={category.obj.name}
                         blockItems={
-                            storiesinCategoryObject.find(
+                            storiesInCategoreyObject.find(
                                 (x) => x.categoryName === category.obj.name
                             ).stories
                         }
-                        onClickNewHandler={() => setShowModalNewStory(true)}
+                        onClickNewHandler={() =>
+                            onClickNewBlockHandler(category.id)
+                        }
                         onClickItemRef="/stories"
                     />
                 ))}

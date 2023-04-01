@@ -3,11 +3,20 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../store";
 import {
+    addTimelineToStory,
+    deleteTimelineFromStory,
+    getTimelinesFromStory,
     selectedStoryNameSelector,
     storiesActions,
     storiesTimelineSortedSelector,
 } from "../store/stories-slice";
 import {
+    addNewDetail,
+    addNewEvent,
+    deleteDetail,
+    deleteEvent,
+    editDetail,
+    editEvent,
     timelineActions,
     timelineSortedSelector,
     timelineStorySelector,
@@ -41,15 +50,20 @@ const TimelineContent = () => {
     const timelinesFound = useSelector(timelineStorySelector);
     const allTimelines = useSelector(timelineSortedSelector);
     const allStories = useSelector(storiesTimelineSortedSelector);
+    const storyFound = allStories.find(
+        (story) => story.obj.name === storySelectedName
+    );
 
     // Dispatch
     const dispatch = useDispatch<AppDispatch>();
 
     // Functions
+
+    // ---------- Inputs
+
     const onClickAddInputHandler = (id: string) => {
         setInputVisible(true);
         setLabelIdClicked(id);
-        console.log(id);
     };
 
     const onBlurHandler = (inputValue: string) => {
@@ -59,55 +73,97 @@ const TimelineContent = () => {
         }
     };
 
-    const addNewDetailHandler = (
+    // ---------- Add New Detail
+
+    const addNewDetailHandler = async (
         timelineEventId: string,
         previousOrder: number,
         value: string
     ) => {
-        dispatch(
-            timelineActions.addDetail([
-                timelineEventId,
-                previousOrder + 1,
-                value,
-            ])
-        );
-
+        await dispatch(addNewDetail(timelineEventId, previousOrder + 1, value));
         setInfoAdded({
             timelineEventId: timelineEventId,
             previousOrder: previousOrder,
         });
     };
 
-    const addNewEventhandler = (previousOrder: number, value: string) => {
-        dispatch(timelineActions.addEvent([previousOrder + 1, value]));
+    // ---------- Add New Event
+
+    const addNewEventhandler = async (previousOrder: number, value: string) => {
+        const eventData = await dispatch(addNewEvent(previousOrder + 1, value));
+        await dispatch(addTimelineToStory(storyFound.id, eventData.name));
         setNewEvent(value);
         setIsLabel(false);
         setInputVisible(false);
     };
 
-    const modifyDetailHandler = (
+    // ---------- Modify Detail
+
+    const dispatchEditDetail = (
+        timelineEventId: string,
+        detailId: string,
+        detailData: any
+    ) => {
+        dispatch(
+            timelineActions.modifyDetail([
+                timelineEventId,
+                detailId,
+                detailData,
+            ])
+        );
+    };
+
+    const modifyDetailHandler = async (
         timelineEventId: string,
         detailId: string,
         newValue: string
     ) => {
         if (newValue !== "") {
-            dispatch(
-                timelineActions.modifyDetail([
-                    timelineEventId,
-                    detailId,
-                    newValue,
-                ])
-            );
+            await dispatch(editDetail(timelineEventId, detailId, newValue));
         } else {
-            dispatch(timelineActions.deleteDetail([timelineEventId, detailId]));
+            await dispatch(deleteDetail(timelineEventId, detailId));
         }
     };
 
-    const modifyEventHandler = (timelineEventId: string, newValue: string) => {
+    // ---------- Modify Event
+
+    const dispatchEditEvent = (timelineEventId: string, eventData: any) => {
+        dispatch(timelineActions.modifyEvent([timelineEventId, eventData]));
+    };
+
+    const dispatchDeleteEvent = (timelineEventId: string) => {
+        dispatch(timelineActions.deleteEvent(timelineEventId));
+    };
+
+    const dispatchDeleteTimelineFromStory = async (
+        timelineEventId: string,
+        storyData: any
+    ) => {
+        const timelineIdInStory = Object.keys(storyData).find(
+            (key) => storyData[key] === timelineEventId
+        );
+
+        await dispatch(deleteEvent(timelineEventId));
+        await dispatch(deleteTimelineFromStory(storyFound.id, timelineEventId));
+    };
+
+    const modifyEventHandler = async (
+        timelineEventId: string,
+        timelineEventOrder: Number,
+        newValue: string
+    ) => {
         if (newValue !== "") {
-            dispatch(timelineActions.modifyEvent([timelineEventId, newValue]));
+            await dispatch(editEvent(timelineEventId, newValue));
+        } else if (timelineEventOrder == 0) {
+            await dispatch(
+                editEvent(
+                    timelineEventId,
+                    "Write the first event in your story..."
+                )
+            );
         } else {
-            dispatch(timelineActions.deleteEvent(timelineEventId));
+            await dispatch(deleteEvent(timelineEventId));
+            await dispatch(getTimelinesFromStory(storyFound.id));
         }
     };
 
@@ -127,20 +183,20 @@ const TimelineContent = () => {
         componentDidMount.current = true;
     }, [infoAdded]);
 
-    useEffect(() => {
-        if (componentDidMountII.current) {
-            // Update stories when a new event is added
-            const timelineEventId = allTimelines.find(
-                (event) => event.event === newEvent
-            ).id;
-            dispatch(storiesActions.addTimeline(timelineEventId));
-        }
-        componentDidMountII.current = true;
-    }, [newEvent]);
+    // useEffect(() => {
+    //     if (componentDidMountII.current) {
+    //         // Update stories when a new event is added
+    //         const timelineEventId = allTimelines.find(
+    //             (event) => event.event === newEvent
+    //         ).id;
+    //         dispatch(storiesActions.addTimeline(timelineEventId));
+    //     }
+    //     componentDidMountII.current = true;
+    // }, [newEvent]);
 
     // Content
     const content = (
-        <div style={{margin: "20px"}}>
+        <div style={{ margin: "20px" }}>
             <ContentBlocks
                 sectionTitle="All Stories"
                 blockItems={allStories}
@@ -188,7 +244,11 @@ const TimelineContent = () => {
                                     onClickAddInputHandler(timelineEvent.id)
                                 }
                                 onClickLabel={(value) =>
-                                    modifyEventHandler(timelineEvent.id, value)
+                                    modifyEventHandler(
+                                        timelineEvent.id,
+                                        timelineEvent.order,
+                                        value
+                                    )
                                 }
                                 classNameLabel="label-edit main-label"
                                 classNameInput="modal-input-edit main-label"

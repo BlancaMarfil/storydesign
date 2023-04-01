@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import {
-    categoriesActions,
+    addNewCategory,
     categoriesSortedSelector,
 } from "../../store/categories-slice";
 import MainButton from "../UI/MainButton";
@@ -23,8 +23,8 @@ const SideMenuCategories = (props: { categorySelectedName: string }) => {
     const dispatch = useDispatch<AppDispatch>();
 
     // Handlers
-    const addNewCategoryHandler = (categoryName: string) => {
-        dispatch(categoriesActions.addCategory(categoryName));
+    const addNewCategoryHandler = async (categoryName: string) => {
+        await dispatch(addNewCategory(categoryName));
         setShowModalNewCategory(false);
     };
 
@@ -37,14 +37,16 @@ const SideMenuCategories = (props: { categorySelectedName: string }) => {
                 >
                     New
                 </MainButton>
-                <Link
-                    key="All"
-                    href="/categories/All"
-                    className={
-                        props.categorySelectedName == "All" ? styles.active : ""
-                    }
-                >
-                    All
+                <Link key="All" href="/categories/All">
+                    <a
+                        className={
+                            props.categorySelectedName === "All"
+                                ? styles.active
+                                : ""
+                        }
+                    >
+                        All
+                    </a>
                 </Link>
                 <SideMenuContent
                     selectedItem={props.categorySelectedName}

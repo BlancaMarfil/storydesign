@@ -2,10 +2,13 @@ import { Fragment, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import {
-    characterActions,
-    charactersSortedSelector,
+    addNewCharacter,
 } from "../../store/characters-slice";
-import { charactersInStorySelector } from "../../store/stories-slice";
+import {
+    addCharacterToStory,
+    charactersInStorySelector,
+    storyObjectsSelector,
+} from "../../store/stories-slice";
 import MainButton from "../UI/MainButton";
 import Portal from "../UI/Modals/Portal";
 import styles from "./SideMenu.module.css";
@@ -20,13 +23,19 @@ const SideMenuCharacters = (props: {
 
     //Selectors
     const charactersInStory = useSelector(charactersInStorySelector);
+    const storyObjects = useSelector(storyObjectsSelector);
+    const storyId = Object.keys(storyObjects).find(
+        (storyId) => storyObjects[storyId].name === props.storySelectedName
+    );
 
     // Dispatch
     const dispatch = useDispatch<AppDispatch>();
 
     // Handlers
-    const addNewCharacterHandler = (characterName: string) => {
-        dispatch(characterActions.addCharacter(characterName));
+
+    const addNewCharacterHandler = async (characterName: string) => {
+        const charId = await dispatch(addNewCharacter(characterName));
+        await dispatch(addCharacterToStory(storyId, charId));
         setShowModalNewCharacter(false);
     };
 

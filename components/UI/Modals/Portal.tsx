@@ -1,8 +1,7 @@
-import { Fragment, FunctionComponent } from "react";
+import { Fragment } from "react";
 import ReactDOM from "react-dom";
 import ModalNew from "./ModalNew";
 import ModalEdit from "./ModalEdit";
-import { compressedType } from "../../../store";
 import ModalDelete from "./ModalDelete";
 import ModalEditStories from "./ModalEditStories";
 

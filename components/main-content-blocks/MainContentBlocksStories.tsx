@@ -1,16 +1,15 @@
 import { useRouter } from "next/router";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, compressedType } from "../../store";
 import { storyCategoriesSelector } from "../../store/categories-slice";
 import {
-    characterActions,
+    addNewCharacter,
     charactersSortedSelector,
 } from "../../store/characters-slice";
 import {
-    charactersInStorySelector,
+    addCharacterToStory,
     selectedStoryNameSelector,
-    storiesActions,
     storiesCharactersSortedSelector,
     storySelectedObjectSelector,
 } from "../../store/stories-slice";
@@ -27,7 +26,7 @@ const MainContentBlocksStories = () => {
     let componentDidMount = useRef(false);
 
     // State
-    const [newCharName, setNewCharName] = useState("");
+    const [newCharStoryId, setNewCharStoryId] = useState("");
     const [showModalNewCharacter, setShowModalNewCharacter] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
 
@@ -39,7 +38,9 @@ const MainContentBlocksStories = () => {
     const allStories = useSelector(storiesCharactersSortedSelector);
     const charactersInStoryObject = allStories.map((story) => {
         const characters: compressedType[] = allCharacters
-            .filter((character) => story.obj.items.includes(character.id))
+            .filter((character) =>
+                Array.from(story.obj.items).includes(character.id)
+            )
             .map((char) => {
                 return { id: char.id, obj: { name: char.name, items: [] } };
             });
@@ -50,27 +51,17 @@ const MainContentBlocksStories = () => {
     const dispatch = useDispatch<AppDispatch>();
 
     // Handlers
-    const addNewCharacterHandler = (characterName: string) => {
-        setNewCharName(characterName);
-        dispatch(characterActions.addCharacter(characterName));
+
+    const addNewCharacterHandler = async (characterName: string) => {
+        const charId = await dispatch(addNewCharacter(characterName));
+        await dispatch(addCharacterToStory(newCharStoryId, charId))
+        setShowModalNewCharacter(false);
     };
 
-    // UseEffect
-    useEffect(() => {
-        if (componentDidMount.current) {
-            const newCharacterId = allCharacters.find(
-                (char) => char.name == newCharName
-            ).id;
-            dispatch(
-                storiesActions.addCharacterToStory([
-                    newCharacterId,
-                    storySelectedName,
-                ])
-            );
-            setShowModalNewCharacter(false);
-        }
-        componentDidMount.current = true;
-    }, [newCharName]);
+    const onClickNewBlockHandler = (storyId: string) => {
+        setNewCharStoryId(storyId);
+        setShowModalNewCharacter(true);
+    };
 
     // Content
     const storiesToShow =
@@ -133,7 +124,9 @@ const MainContentBlocksStories = () => {
                                 (x) => x.storyName === story.obj.name
                             ).characters
                         }
-                        onClickNewHandler={() => setShowModalNewCharacter(true)}
+                        onClickNewHandler={() =>
+                            onClickNewBlockHandler(story.id)
+                        }
                         onClickItemRef={`/stories/${story.obj.name}`}
                     />
                 ))}

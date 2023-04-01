@@ -1,6 +1,5 @@
 import { createSelector, createSlice } from "@reduxjs/toolkit";
-import { WritableDraft } from "immer/dist/internal";
-import useHttp from "../components/hooks/use-http";
+
 import {
     compressedType,
     getCompressedType,
@@ -11,55 +10,27 @@ import {
     selectedStoryNameSelector,
     storiesCharactersSortedSelector,
 } from "./stories-slice";
+import { firebaseUrl } from "../components/hooks/httpFunctions";
 
 export interface categoryFormat {
     name: string;
     stories: string[];
 }
 
-const categories: Record<string, categoryFormat> = {
-    category_1: {
-        name: "Contemporary",
-        stories: ["story_1", "story_3", "story_5"],
-    },
-    category_2: {
-        name: "Crime",
-        stories: ["story_1", "story_2"],
-    },
-    category_3: {
-        name: "Historical",
-        stories: ["story_2", "story_3", "story_5"],
-    },
-    category_4: {
-        name: "Horror",
-        stories: ["story_4", "story_5"],
-    },
-    category_5: {
-        name: "Romance",
-        stories: ["story_5"],
-    },
-    category_6: {
-        name: "Suspense",
-        stories: ["story_2", "story_3"],
-    },
-    category_7: {
-        name: "Thriller",
-        stories: ["story_4"],
-    },
-};
-
 const initialCategoriesState = {
-    categoryObjects: categories,
+    categoryObjects: {} as Record<string, categoryFormat>,
 };
 
 const categoriesSlice = createSlice({
     name: "categoriesSlice",
     initialState: initialCategoriesState,
     reducers: {
+        loadCategories(state, action) {
+            state.categoryObjects = action.payload;
+        },
         addCategory(state, action) {
-            const newId = Math.random().toString();
-            state.categoryObjects[newId] = {
-                name: action.payload,
+            state.categoryObjects[action.payload[0]] = {
+                name: action.payload[1],
                 stories: [],
             };
         },
@@ -70,28 +41,30 @@ const categoriesSlice = createSlice({
             state.categoryObjects[action.payload[0]].name = action.payload[1];
         },
         addStoryToCategory(state, action) {
-            const arrayObj = getCompressedType(
-                state.categoryObjects,
-                "categories"
+            state.categoryObjects[action.payload[1]].stories.push(
+                action.payload[0]
             );
-            const categoryFound = arrayObj.find(
-                (category) => category.id === action.payload[1]
-            );
-            categoryFound.obj.items.push(action.payload[0]);
         },
         deleteStoryFromCategory(state, action) {
-            const stories: string[] =
-                state.categoryObjects[action.payload[1]].stories;
-            const filteredStories = stories.filter(
-                (storyId) => storyId !== action.payload[0]
-            );
-            state.categoryObjects[action.payload[1]].stories = filteredStories;
+            // const stories: string[] =
+            //     state.categoryObjects[action.payload[1]].stories;
+            // const filteredStories = stories.filter(
+            //     (storyId) => storyId !== action.payload[0]
+            // );
+            // state.categoryObjects[action.payload[1]].stories = filteredStories;
+
+            const arrStories = state.categoryObjects[action.payload[0]].stories;
+            arrStories.splice(arrStories.indexOf(action.payload[1]), 1);
         },
     },
 });
 
+interface expectedJSONFormat {
+    name: string;
+}
+
 // SELECTORS
-const categoryObjectsSelector = (state: RootState) =>
+export const categoryObjectsSelector = (state: RootState) =>
     state.categories.categoryObjects;
 
 export const categoriesSortedSelector: Selector<compressedType[]> =
@@ -120,6 +93,143 @@ export const storyCategoriesSelector: Selector<compressedType[]> =
             return categoriesFound;
         }
     );
+
+// THUNKS
+
+const mappingCategoryObj = (data: any) => {
+    const mappedData = {} as Record<string, categoryFormat>;
+    Object.keys(data).map((id) => {
+        const stories: string[] =
+            data[id].stories && Object.values(data[id].stories);
+        mappedData[id] = { name: data[id].name, stories: stories || [] };
+    });
+    return mappedData;
+};
+
+export const loadCategories = () => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(`${firebaseUrl}/categories.json`, {
+                method: "GET",
+                headers: {},
+                body: null,
+            });
+
+            const data: any = await response.json();
+            dispatch(
+                categoriesActions.loadCategories(mappingCategoryObj(data))
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const addNewCategory = (categoryName: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(`${firebaseUrl}/categories.json`, {
+                method: "POST",
+                body: JSON.stringify({ name: categoryName }),
+                headers: {},
+            });
+
+            const data: any = await response.json();
+            dispatch(categoriesActions.addCategory([data.name, categoryName]));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const deleteCategory = (categoryId: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/categories/${categoryId}.json`,
+                {
+                    method: "DELETE",
+                    body: null,
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(categoriesActions.deleteCategory(categoryId));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const editCategory = (categoryId: string, newName: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/categories/${categoryId}/name.json`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify({ name: newName }),
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(
+                categoriesActions.changeCategoryName([categoryId, newName])
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const addStoryToCategory = (categoryId: string, storyId: string) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/categories/${categoryId}/stories.json`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(storyId),
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(
+                categoriesActions.addStoryToCategory([storyId, categoryId])
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
+
+export const deleteStoryFromCategory = (
+    categoryId: string,
+    storyId: string
+) => {
+    return async (dispatch) => {
+        try {
+            const response = await fetch(
+                `${firebaseUrl}/categories/${categoryId}/stories/${storyId}.json`,
+                {
+                    method: "DELETE",
+                    body: null,
+                    headers: {},
+                }
+            );
+
+            const data: any = await response.json();
+            dispatch(
+                categoriesActions.deleteStoryFromCategory([categoryId, storyId])
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    };
+};
 
 export default categoriesSlice.reducer;
 export const categoriesActions = categoriesSlice.actions;

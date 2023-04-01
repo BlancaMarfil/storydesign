@@ -10,7 +10,6 @@ interface propsTypes {
 }
 
 const SideMenuContent = (props: propsTypes) => {
-    console.log(props.selectedItem);
     return (
         <Fragment>
             {props.content.map((object) => (
